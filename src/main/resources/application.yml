@@ -1,0 +1,37 @@
+server:
+  port: 8123 #指定项目启动的端口号
+  servlet:
+    context-path: /api #指定上下文
+spring:
+  application:
+    name: syc-picture-backend #指定项目名称
+    #数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver #指定驱动类
+    url: jdbc:mysql://localhost:3306/syc_picture
+    username: root
+    password: syc1012629433
+mybatis-plus:
+  configuration:
+    #开启自动驼峰命名规则（camel case）映射,当前为关闭
+    map-underscore-to-camel-case: false
+    #仅在开发环境打印日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #逻辑删除
+  global-config:
+    db-config:
+      logic-delete-field: isDelete #全局逻辑删除的实体字段名称
+      logic-delete-value: 1 #1表示已经被逻辑删除
+      logic-not-delete-value: 0 #0表示未被删除
+knife4j:
+  enable: true
+  openapi:
+    title: 接口文档
+    version: v1.0
+    group:
+      #指定接口文档的组
+      default:
+        group-name: 默认分组
+        api-rule: package #分组规则，这里是通过扫包进行分组
+        api-rule-resources:
+          - com.syc.sycpicturebackend.controller #指定扫包的位置，这里指定的是我们的controller包
