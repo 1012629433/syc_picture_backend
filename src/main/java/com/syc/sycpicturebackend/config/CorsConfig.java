@@ -3,7 +3,7 @@ package com.syc.sycpicturebackend.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
+//全局跨域类
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
