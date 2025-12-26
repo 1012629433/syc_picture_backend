@@ -4,10 +4,14 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+/**
+ * 用户登录请求
+ */
 @Data
-public class UserRegisterRequest implements Serializable {
+public class UserLoginRequest implements Serializable {
 
-    private static final long serialVersionUID = 8849291956792840917L;
+
+    private static final long serialVersionUID = 2811865053222853965L;
     /**
      * 账号
      */
@@ -18,8 +22,4 @@ public class UserRegisterRequest implements Serializable {
      */
     private String userPassword;
 
-    /**
-     * 确认密码
-     */
-    private String checkPassword;
 }
