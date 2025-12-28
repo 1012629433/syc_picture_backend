@@ -1,6 +1,6 @@
 package com.syc.sycpicturebackend.service;
 
-import cn.hutool.http.server.HttpServerRequest;
+import javax.servlet.http.HttpServletRequest;
 import com.syc.sycpicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.syc.sycpicturebackend.model.vo.LoginUserVO;
@@ -12,7 +12,7 @@ import com.syc.sycpicturebackend.model.vo.LoginUserVO;
 */
 public interface UserService extends IService<User> {
     /**
-     *
+     * 用户注册
      * @param userAccount
      * @param userPassword
      * @param checkPassword
@@ -21,13 +21,42 @@ public interface UserService extends IService<User> {
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
     /**
-     *
+     * 用户登录
      * @param userAccount
      * @param userPassword
      * @return 已脱敏用户信息
      */
 
-    LoginUserVO userLogin(String userAccount, String userPassword, HttpServerRequest request);
+    LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
+    /**
+     * 获取加密后的密码
+     *
+     * @param userPassword
+     * @return
+     */
     String getEncryptPassword(String userPassword);
+
+    /**
+     * 获取当前登录的用户信息
+     *
+     * @param request
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+
+    /**
+     * 获取脱敏后的用户信息
+     *
+     * @param user
+     * @return
+     */
+    LoginUserVO getLoginUserVO(User user);
+
+    /**
+     * 用户退出登录
+     * @param request
+     * @return
+     */
+    Boolean UserLogout(HttpServletRequest request);
 }

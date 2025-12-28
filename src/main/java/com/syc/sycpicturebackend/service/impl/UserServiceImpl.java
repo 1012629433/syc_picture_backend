@@ -1,10 +1,13 @@
 package com.syc.sycpicturebackend.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.server.HttpServerRequest;
+
+import javax.servlet.http.HttpServletRequest;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.syc.sycpicturebackend.constant.UserConstant;
 import com.syc.sycpicturebackend.exception.BusinessException;
 import com.syc.sycpicturebackend.exception.ErrorCode;
 import com.syc.sycpicturebackend.exception.ThrowUtils;
@@ -14,6 +17,7 @@ import com.syc.sycpicturebackend.model.vo.LoginUserVO;
 import com.syc.sycpicturebackend.service.UserService;
 import com.syc.sycpicturebackend.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -24,8 +28,8 @@ import org.springframework.util.DigestUtils;
  */
 @Service
 @Slf4j
-public class UserServiceImpl extends ServiceImpl<UserMapper,User>
-        implements UserService{
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>
+        implements UserService {
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -73,24 +77,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,User>
     }
 
     @Override
-    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServerRequest httpServerRequest) {
+    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         //1.校验
-        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount,userPassword),ErrorCode.PARAMS_ERROR,"参数为空");
-        ThrowUtils.throwIf(userAccount.length()<4,ErrorCode.PARAMS_ERROR,"账号错误");
-        ThrowUtils.throwIf(userPassword.length()<4,ErrorCode.PARAMS_ERROR,"密码错误");
+        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword), ErrorCode.PARAMS_ERROR, "参数为空");
+        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号错误");
+        ThrowUtils.throwIf(userPassword.length() < 4, ErrorCode.PARAMS_ERROR, "密码错误");
         //2.对用户传递的密码进行加密
         //加密是为了保证明文对明文，密文对密文，加密后才能与数据库中加密的密码进行比较
-        String encryptPassword=getEncryptPassword(userPassword);
+        String encryptPassword = getEncryptPassword(userPassword);
         //3.查询数据库用户是否存在
-        QueryWrapper<User> queryWrapper=new QueryWrapper<>();
-        queryWrapper.eq("userAccount",userAccount);
-        queryWrapper.eq("userPassword",userPassword);
-        User user=this.baseMapper.selectOne(queryWrapper);
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userAccount", userAccount);
+        queryWrapper.eq("userPassword", encryptPassword);
+        User user = this.baseMapper.selectOne(queryWrapper);
         //不存在，抛异常，用户不存在
-        ThrowUtils.throwIf(user==null,ErrorCode.PARAMS_ERROR,"用户不存在或密码错误");
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         log.info("user login failed,userAccount can match userPassword");
         //4.保存用户登录态
-        return null;
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+        return this.getLoginUserVO(user);
     }
 
 
@@ -99,6 +104,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,User>
         // 盐值，混淆密码
         final String SALT = "syc_picture";
         return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        //登录验证
+        Object userLogin = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User currentUser=(User) userLogin;
+        if(currentUser==null||currentUser.getId()==null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        //在不追求极致性能的情况下，为了保证数据一致性，最好再从数据库中查找一下
+        Long userId=currentUser.getId();
+        currentUser=this.getById(userId);
+        //如果用户在登录后被删除，那么我们查找的用户可能变为空
+        ThrowUtils.throwIf(currentUser==null,ErrorCode.NOT_LOGIN_ERROR);
+        return currentUser;
+    }
+
+    @Override
+    public LoginUserVO getLoginUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        LoginUserVO loginUserVO = new LoginUserVO();
+        //使用hutool工具包中的方法将user中的属性拷贝到loginUserVO中
+        BeanUtil.copyProperties(user, loginUserVO);
+        return loginUserVO;
+    }
+
+    @Override
+    public Boolean UserLogout(HttpServletRequest request) {
+        //登录验证
+        Object userLogin = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if(userLogin==null){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"未登录");
+        }
+        //移除session中存储的用户登录信息
+        request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
+        return true;
     }
 
 }
