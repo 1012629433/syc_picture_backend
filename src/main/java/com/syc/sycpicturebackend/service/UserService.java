@@ -1,9 +1,15 @@
 package com.syc.sycpicturebackend.service;
 
 import javax.servlet.http.HttpServletRequest;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.syc.sycpicturebackend.model.dto.user.UserQueryRequest;
 import com.syc.sycpicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.syc.sycpicturebackend.model.vo.LoginUserVO;
+import com.syc.sycpicturebackend.model.vo.UserVO;
+
+import java.util.List;
 
 /**
 * @author Lenovo
@@ -46,7 +52,7 @@ public interface UserService extends IService<User> {
     User getLoginUser(HttpServletRequest request);
 
     /**
-     * 获取脱敏后的用户信息
+     * 获取脱敏后的登录用户信息
      *
      * @param user
      * @return
@@ -59,4 +65,38 @@ public interface UserService extends IService<User> {
      * @return
      */
     Boolean UserLogout(HttpServletRequest request);
+
+    /**
+     * 获取脱敏后的用户信息
+     *
+     * @param user
+     * @return
+     */
+    UserVO getUserVO(User user);
+
+    /**
+     * 获取脱敏后的用户信息列表
+     *
+     * @param list
+     * @return
+     */
+    List<UserVO> getUserVOList(List<User> list);
+
+    boolean addUser(User user);
+
+    /**
+     * 获取查询条件
+     *
+     * @param userQueryRequest
+     * @return
+     */
+    QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 根据id删除用户
+     *
+     * @param id
+     * @return
+     */
+    boolean deleteUser(Long id);
 }

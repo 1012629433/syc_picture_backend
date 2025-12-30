@@ -1,25 +1,31 @@
 package com.syc.sycpicturebackend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 
 import javax.servlet.http.HttpServletRequest;
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syc.sycpicturebackend.constant.UserConstant;
 import com.syc.sycpicturebackend.exception.BusinessException;
 import com.syc.sycpicturebackend.exception.ErrorCode;
 import com.syc.sycpicturebackend.exception.ThrowUtils;
+import com.syc.sycpicturebackend.model.dto.user.UserQueryRequest;
 import com.syc.sycpicturebackend.model.entity.User;
 import com.syc.sycpicturebackend.model.enums.UserRoleEnum;
 import com.syc.sycpicturebackend.model.vo.LoginUserVO;
+import com.syc.sycpicturebackend.model.vo.UserVO;
 import com.syc.sycpicturebackend.service.UserService;
 import com.syc.sycpicturebackend.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Lenovo
@@ -144,6 +150,81 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
         return true;
     }
+
+    @Override
+    public UserVO getUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        //使用hutool工具包中的方法将user中的属性拷贝到loginUserVO中
+        BeanUtil.copyProperties(user, userVO);
+        return userVO;
+    }
+
+    @Override
+    public List<UserVO> getUserVOList(List<User> list) {
+        //如果为空直接返回空列表
+        if (CollUtil.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        return list.stream()
+                .map(this::getUserVO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean addUser(User user) {
+        //1.检查是否为空
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "参数为空");
+        //2.设置加密后的默认密码
+        final String DEFAULT_PASSWORD = "123456";
+        String encryptPassword = getEncryptPassword(DEFAULT_PASSWORD);
+        user.setUserPassword(encryptPassword);
+        //3.插入数据库
+        boolean result = this.save(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "添加失败");
+        return result;
+    }
+
+    @Override
+    public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
+        if (userQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        Long id = userQueryRequest.getId();
+        String userAccount = userQueryRequest.getUserAccount();
+        String userName = userQueryRequest.getUserName();
+        String userProfile = userQueryRequest.getUserProfile();
+        String userRole = userQueryRequest.getUserRole();
+        String sortField = userQueryRequest.getSortField();
+        String sortOrder = userQueryRequest.getSortOrder();
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        //eq精确查询
+        queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
+        queryWrapper.eq(StrUtil.isNotBlank(userRole), "userRole", userRole);
+        //like模糊查询
+        queryWrapper.like(StrUtil.isNotBlank(userAccount), "userAccount", userAccount);
+        queryWrapper.like(StrUtil.isNotBlank(userName), "userName", userName);
+        queryWrapper.like(StrUtil.isNotBlank(userProfile), "userProfile", userProfile);
+        queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
+        return queryWrapper;
+    }
+
+    @Override
+    public boolean deleteUser(Long id) {
+        //检查用户id是否为空
+        ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR, "参数为空");
+        //检查用户是否存在
+        User user = this.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "用户不存在");
+        //根据id删除用户
+        boolean result = this.removeById(id);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "删除失败");
+        //返回结果
+        return result;
+    }
+
 
 }
 
