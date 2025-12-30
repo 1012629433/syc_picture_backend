@@ -23,6 +23,7 @@ mybatis-plus:
       logic-delete-field: isDelete #全局逻辑删除的实体字段名称
       logic-delete-value: 1 #1表示已经被逻辑删除
       logic-not-delete-value: 0 #0表示未被删除
+#swagger接口文档配置
 knife4j:
   enable: true
   openapi:
@@ -35,3 +36,4 @@ knife4j:
         api-rule: package #分组规则，这里是通过扫包进行分组
         api-rule-resources:
           - com.syc.sycpicturebackend.controller #指定扫包的位置，这里指定的是我们的controller包
+
