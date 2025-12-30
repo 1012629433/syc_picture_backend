@@ -1,11 +1,11 @@
-### Custom ###
-applilcation-local.yml
-
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Custom ###
+applilcation-local.yml
 
 ### STS ###
 .apt_generated
