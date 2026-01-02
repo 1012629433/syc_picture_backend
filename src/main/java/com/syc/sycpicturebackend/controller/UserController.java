@@ -151,7 +151,6 @@ public class UserController {
         long current = userQueryRequest.getCurrent();
         long pageSize = userQueryRequest.getPageSize();
         Page<User> userPage=userService.page(new Page<>(current,pageSize),userService.getQueryWrapper(userQueryRequest));
-        ThrowUtils.throwIf(userPage==null,ErrorCode.OPERATION_ERROR,"查询结果为空");
         Page<UserVO> userVOPage=new Page<>(current,pageSize,userPage.getTotal());
         List<UserVO> userVOList=userService.getUserVOList(userPage.getRecords());
         userVOPage.setRecords(userVOList);
