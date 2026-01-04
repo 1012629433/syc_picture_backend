@@ -1,7 +1,6 @@
 package com.syc.sycpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,12 +12,10 @@ import com.syc.sycpicturebackend.constant.UserConstant;
 import com.syc.sycpicturebackend.exception.BusinessException;
 import com.syc.sycpicturebackend.exception.ErrorCode;
 import com.syc.sycpicturebackend.exception.ThrowUtils;
-import com.syc.sycpicturebackend.model.dto.picture.PictureEditRequest;
-import com.syc.sycpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.syc.sycpicturebackend.model.dto.picture.PictureUpdateRequest;
-import com.syc.sycpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.syc.sycpicturebackend.model.dto.picture.*;
 import com.syc.sycpicturebackend.model.entity.Picture;
-import com.syc.sycpicturebackend.model.entity.PictureTagCategory;
+import com.syc.sycpicturebackend.model.enums.PictureReviewStatusEnum;
+import com.syc.sycpicturebackend.model.vo.PictureTagCategory;
 import com.syc.sycpicturebackend.model.entity.User;
 import com.syc.sycpicturebackend.model.vo.PictureVO;
 import com.syc.sycpicturebackend.service.PictureService;
@@ -43,17 +40,30 @@ public class PictureController {
     UserService userService;
 
     /**
-     * 上传图片
+     * 上传图片，使用文件上传方式
      * @param multipartFile
      * @param pictureUploadRequest
      * @param httpServletRequest
      * @return
      */
     @PostMapping("/upload")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<PictureVO> upLoadPicture(@RequestPart("file") MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         PictureVO pictureVO = pictureService.upLoadPicture(multipartFile, pictureUploadRequest, loginUser);
+        return ResultUtils.success(pictureVO);
+    }
+
+    /**
+     * 根据url上传图片
+     * @param pictureUploadRequest
+     * @param httpServletRequest
+     * @return
+     */
+    @PostMapping("/upload/url")
+    public BaseResponse<PictureVO> upLoadPictureByUrl(PictureUploadRequest pictureUploadRequest, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        String fileUrl= pictureUploadRequest.getFileUrl();
+        PictureVO pictureVO = pictureService.upLoadPicture(fileUrl, pictureUploadRequest, loginUser);
         return ResultUtils.success(pictureVO);
     }
 
@@ -88,7 +98,7 @@ public class PictureController {
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateRequest pictureUpdateRequest){
+    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateRequest pictureUpdateRequest, HttpServletRequest httpServletRequest) {
         //检查参数
         ThrowUtils.throwIf(pictureUpdateRequest==null||pictureUpdateRequest.getId()<0,ErrorCode.PARAMS_ERROR);
         //将dto类转化为实体类
@@ -101,6 +111,9 @@ public class PictureController {
         long id=picture.getId();
         Picture oldPicture=pictureService.getById(id);
         ThrowUtils.throwIf(oldPicture==null,ErrorCode.NOT_FOUND_ERROR,"图片不存在");
+        //补充审核参数
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        pictureService.fileReviewParams(picture, loginUser);
         //更新图片
         boolean result= pictureService.updateById(picture);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR,"更新失败");
@@ -136,6 +149,10 @@ public class PictureController {
         //从数据库查找图片
         Picture picture=pictureService.getById(id);
         ThrowUtils.throwIf(picture==null,ErrorCode.NOT_FOUND_ERROR,"图片不存在");
+        //检查图片状态,未过申图片用户无法获取
+        if(picture.getReviewStatus()!=PictureReviewStatusEnum.PASS.getValue()){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"图片不存在");
+        }
         //封装实体类
         PictureVO pictureVO=PictureVO.objToVo(picture);
         //返回查找结果
@@ -172,6 +189,8 @@ public class PictureController {
     public BaseResponse<Page<PictureVO>> getPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest){
         //检查参数
         ThrowUtils.throwIf(pictureQueryRequest==null,ErrorCode.PARAMS_ERROR);
+        //将请求的图片状态设置为过审，确保普通用户只能查看到过审的图片
+        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
         //根据参数获取查询语句对象
         QueryWrapper<Picture> queryWrapper=pictureService.getQueryWrapper(pictureQueryRequest);
         long current = pictureQueryRequest.getCurrent();
@@ -181,7 +200,6 @@ public class PictureController {
         //查找数据库
         //使用mybatis框架提供的分页查询方法
         Page<Picture> picturePage=pictureService.page(new Page<>(current,size),queryWrapper);
-        ThrowUtils.throwIf(CollUtil.isEmpty(picturePage.getRecords()),ErrorCode.NOT_FOUND_ERROR,"未找到图片");
         //返回封装后的分页数据
         return ResultUtils.success(pictureService.getPictureVOByPage(picturePage));
     }
@@ -193,7 +211,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/edit")
-    public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest,HttpServletRequest httpServletRequest){
+    public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest, HttpServletRequest httpServletRequest) {
         //参数检查
         ThrowUtils.throwIf(pictureEditRequest==null||pictureEditRequest.getId()<0,ErrorCode.PARAMS_ERROR);
         //将dto转化为实体类
@@ -213,6 +231,8 @@ public class PictureController {
         if(!userService.isAdmin(loginUser)&&!loginUser.getId().equals(picture.getUserId())){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        //补充审核参数
+        pictureService.fileReviewParams(picture, loginUser);
         //更新图片
         boolean result= pictureService.updateById(picture);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR,"编辑失败");
@@ -234,6 +254,14 @@ public class PictureController {
         return ResultUtils.success(pictureTagCategory);
     }
 
+    @PostMapping("/review")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> pictureDoReview(@RequestBody PictureReviewRequest pictureReviewRequest, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(pictureReviewRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginuser = userService.getLoginUser(httpServletRequest);
+        pictureService.pictureDoReview(pictureReviewRequest, loginuser);
+        return ResultUtils.success(true);
+    }
 
 
 }

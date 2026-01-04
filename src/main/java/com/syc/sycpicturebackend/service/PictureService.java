@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.syc.sycpicturebackend.model.dto.picture.PictureQueryRequest;
+import com.syc.sycpicturebackend.model.dto.picture.PictureReviewRequest;
 import com.syc.sycpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.syc.sycpicturebackend.model.entity.Picture;
 import com.syc.sycpicturebackend.model.entity.User;
@@ -28,7 +29,7 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser
      * @return
      */
-    public PictureVO upLoadPicture(MultipartFile multipartFile
+    PictureVO upLoadPicture(Object inputSource
             , PictureUploadRequest pictureUploadRequest, User loginUser);
 
     /**
@@ -36,25 +37,41 @@ public interface PictureService extends IService<Picture> {
      * @param pictureQueryRequest
      * @return
      */
-    public QueryWrapper<Picture> getQueryWrapper(PictureQueryRequest pictureQueryRequest);
+    QueryWrapper<Picture> getQueryWrapper(PictureQueryRequest pictureQueryRequest);
 
     /**
      * 获取图片包装类（单条）
      * @param picture
      * @return
      */
-    public PictureVO getPictureVO(Picture picture);
+    PictureVO getPictureVO(Picture picture);
 
     /**
      * 分页获取图片包装类
      * @param page
      * @return
      */
-    public Page<PictureVO> getPictureVOByPage(Page<Picture> page);
+    Page<PictureVO> getPictureVOByPage(Page<Picture> page);
 
     /**
      *修改和更新图片时进行验证
      * @param picture
      */
-    public void validPicture(Picture picture);
+    void validPicture(Picture picture);
+
+    /**
+     * 管理员图片审核
+     *
+     * @param pictureReviewRequest
+     * @param loginUser
+     */
+    void pictureDoReview(PictureReviewRequest pictureReviewRequest, User loginUser);
+
+    /**
+     * 填充审核参数
+     *
+     * @param picture
+     * @param loginUser
+     */
+    void fileReviewParams(Picture picture, User loginUser);
 }

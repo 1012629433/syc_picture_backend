@@ -84,7 +84,7 @@ public class UserController {
         return ResultUtils.success(user.getId());
     }
 
-    @DeleteMapping("/delete")
+    @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest userDeleteRequest) {
         ThrowUtils.throwIf(userDeleteRequest == null || userDeleteRequest.getId() < 0, ErrorCode.PARAMS_ERROR);
