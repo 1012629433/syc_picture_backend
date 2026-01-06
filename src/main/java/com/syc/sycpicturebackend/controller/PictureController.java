@@ -256,12 +256,21 @@ public class PictureController {
 
     @PostMapping("/review")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> pictureDoReview(@RequestBody PictureReviewRequest pictureReviewRequest, HttpServletRequest httpServletRequest) {
+    public BaseResponse<Boolean> pictureDoReview(@RequestBody PictureReviewRequest pictureReviewRequest,
+                                                 HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(pictureReviewRequest == null, ErrorCode.PARAMS_ERROR);
         User loginuser = userService.getLoginUser(httpServletRequest);
         pictureService.pictureDoReview(pictureReviewRequest, loginuser);
         return ResultUtils.success(true);
     }
 
-
+    @PostMapping("/upload/batch")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Integer> upLoadPictureByBatch(@RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,
+                                                      HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser=userService.getLoginUser(httpServletRequest);
+        int upLoadPictureCount=pictureService.pictureUploadByBatch(pictureUploadByBatchRequest,loginUser);
+        return ResultUtils.success(upLoadPictureCount);
+    }
 }

@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 @Service
 public class UrlPictureUpload extends PictureUploadTemplate {
-
     @Override
     protected void validPicture(Object inputSource) {
         String fileUrl=(String) inputSource;
@@ -83,4 +82,33 @@ public class UrlPictureUpload extends PictureUploadTemplate {
         String fileUrl=(String) inputSource;
         HttpUtil.downloadFile(fileUrl,file);
     }
+
+    @Override
+    protected String getFileType(Object inputSource) {
+        //因为在获取文件类型这个方法执行前已经进行过校验了，无法通过校验也不会执行本方法，因此在这里不再进行判断
+        String fileUrl = (String) inputSource;
+        HttpResponse httpResponse = null;
+        try {
+            httpResponse = HttpUtil.createRequest(Method.HEAD, fileUrl).execute();
+            //如果无法通过请求头获取类型，默认设置为jpg格式
+            if (httpResponse.getStatus() != HttpStatus.HTTP_OK) {
+                return "jpg";
+            }
+            //返回文件类型
+            String contentType = httpResponse.header("Content - Type");
+            if (contentType != null && contentType.startsWith("image/")) {
+                contentType = contentType.substring("image/".length());
+                return contentType;
+            } else {
+                // 处理不符合预期格式的情况，例如设置默认图片类型
+                return "jpg";
+            }
+        } finally {
+            //如果建立了连接，则执行完毕后需要关闭连接
+            if (httpResponse != null) {
+                httpResponse.close();
+            }
+        }
+    }
+
 }

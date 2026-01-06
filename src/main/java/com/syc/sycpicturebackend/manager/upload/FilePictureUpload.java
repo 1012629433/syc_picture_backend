@@ -36,4 +36,11 @@ public class FilePictureUpload extends PictureUploadTemplate {
         MultipartFile multipartFile = (MultipartFile) inputSource;
         multipartFile.transferTo(file);
     }
+
+    @Override
+    protected String getFileType(Object inputSource) {
+        MultipartFile multipartFile = (MultipartFile) inputSource;
+        return FileUtil.getSuffix(multipartFile.getOriginalFilename());
+    }
+
 }

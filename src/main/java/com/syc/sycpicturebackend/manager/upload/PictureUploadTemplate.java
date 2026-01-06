@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
 import com.syc.sycpicturebackend.config.CosClientConfig;
@@ -40,7 +41,11 @@ public abstract class PictureUploadTemplate {
         //2. 图片上传地址
         //todo
         String originalFileName=getOriginalFileName(inputSource);
-        String fileSuffix = FileUtil.getSuffix(originalFileName);
+        String fileSuffix =FileUtil.getSuffix(originalFileName);
+        //如果从文件名中没有获取文件类型，则调用相应方法，主要针对url获取图片的方式
+        if(StrUtil.isBlank(fileSuffix)){
+            fileSuffix=this.getFileType(inputSource);
+        }
         String uuid = RandomUtil.randomString(16);
         String fileName = String.format("%s_%s.%s", DateUtil.formatDate(new Date()), uuid, fileSuffix);
         String upLoadPath = String.format("/%s/%s", upLoadPathPrefix, fileName);
@@ -110,7 +115,9 @@ public abstract class PictureUploadTemplate {
 
     /**
      * 处理输入源，校验文件（本地文件或url）
+     *
      * @param inputSource
+     * @return
      */
     protected abstract void validPicture(Object inputSource);
 
@@ -128,6 +135,11 @@ public abstract class PictureUploadTemplate {
      */
     protected abstract void ProcessFile(Object inputSource, File file) throws IOException;
 
-
+    /**
+     * 获取文件类型
+     * @param inputSource
+     * @return
+     */
+    protected abstract String getFileType(Object inputSource);
 
 }
